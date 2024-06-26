@@ -1,54 +1,167 @@
 # src/crimson/file_loader/__init__.py
-
 import os
-import shutil
+from typing import *
 from pathlib import Path
-from typing import List, Optional
+import shutil
+import re
 
-def transform_path(path: str, separator: str = "%") -> str:
-    return path.replace(os.path.sep, separator)
 
-def restore_path(transformed: str, separator: str = "%") -> str:
-    return transformed.replace(separator, os.path.sep)
+def search(pattern: str, text: str, flags: Optional[List[re.RegexFlag]] = None):
+    combined_flags = 0
+    if flags:
+        for flag in flags:
+            combined_flags |= flag
 
-def load_files(
-    source_dir: str,
-    target_dir: str,
-    include_patterns: Optional[List[str]] = None,
-    exclude_patterns: Optional[List[str]] = None,
-    separator: str = "%"
+    compiled_pattern = re.compile(pattern, flags=combined_flags)
+
+    is_included = compiled_pattern.search(text) is not None
+
+    return is_included
+
+@overload
+def filter(
+    pattern: str,
+    paths: List[str],
+    mode: Literal['include', 'exclude'] = 'include',
+    flags: Optional[List[re.RegexFlag]] = None
 ) -> List[str]:
-    source_path = Path(source_dir)
-    target_path = Path(target_dir)
-    loaded_files = []
+    '''doc1'''
+    ...
 
-    for root, _, files in os.walk(source_dir):
+@overload
+def filter(
+    pattern: str,
+    paths: List[Path],
+    mode: Literal['include', 'exclude'] = 'include',
+    flags: Optional[List[re.RegexFlag]] = None
+) -> List[str]:
+    '''doc2'''
+    ...
+
+def filter(
+    pattern: str, 
+    paths: Union[List[str], List[Path]],
+    mode: Literal['include', 'exclude'] = 'include',
+    flags: Optional[List[re.RegexFlag]] = None
+) -> List[str]:
+    
+    if isinstance(paths[0], Path):
+        paths = _convert_paths_to_texts(paths)
+    paths = _filter_base(
+        pattern,
+        paths,
+        mode,
+        flags,
+    )
+    
+    return paths
+
+def _filter_base(pattern: str, paths: List[str], mode: Literal['include', 'exclude'] = 'include', flags: Optional[List[re.RegexFlag]] = None) -> List[str]:
+    included = []
+    for path in paths:
+        is_included = search(pattern, path, flags)
+        if mode == 'exclude':
+            is_included = not is_included
+        if is_included:
+            included.append(path)
+    return included
+
+def _convert_paths_to_texts(paths: List[Path]) -> List[str]:
+    texts = [str(path) for path in paths]
+    return texts
+
+
+def get_paths(
+    source: str,
+):
+    paths = []
+    for root, _, files in os.walk(source):
         for file in files:
             file_path = Path(root) / file
-            relative_path = file_path.relative_to(source_path)
+            paths.append(str(file_path))
+    return paths
 
-            if include_patterns and not any(relative_path.match(pattern) for pattern in include_patterns):
-                continue
-            if exclude_patterns and any(relative_path.match(pattern) for pattern in exclude_patterns):
-                continue
+def filter_paths(
+    source: str,
+    includes: List[str]=[],
+    excludes: List[str]=[],
+):
+    paths = get_paths(source)
+    
+    for pattern in includes:
+        paths = filter(pattern, paths, mode='include')
+    
+    for pattern in excludes:
+        paths = filter(pattern, paths, mode='exclude')
+    
+    return paths
 
-            transformed_name = transform_path(str(relative_path), separator)
-            target_file = target_path / transformed_name
+def transform_path(
+  path:str,
+  separator:str='%'
+)->str:
+    path = path.replace('/', separator)
+    return path
 
-            target_file.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(file_path, target_file)
-            loaded_files.append(str(relative_path))
+def collect_files(
+    source: str,
+    out_dir: str,
+    separator: str = '%',
+    includes: List[str]=[],
+    excludes: List[str]=[],
+    path_editor: Optional[Callable[[str], str]] = None,
+    overwrite: bool = True
+):
+    source_paths = filter_paths(source, includes, excludes)
+    
+    out_dir_path = Path(out_dir)
+    
+    if overwrite and out_dir_path.exists():
+        shutil.rmtree(out_dir)
+    
+    out_dir_path.mkdir(parents=True, exist_ok=True)
+    
+    for src_path in source_paths:
 
-    return loaded_files
+        new_path = transform_path(src_path, separator)
+        if path_editor:
+            new_path = path_editor(new_path)
+        new_path = str(Path(out_dir)/new_path)
 
-# Usage example
-if __name__ == "__main__":
-    source_directory = "path/to/source"
-    target_directory = "path/to/target"
-    include = ["*.py", "*.json"]
-    exclude = ["*test*", "*__pycache__*"]
+        Path(new_path).parent.mkdir(parents=True, exist_ok=True)
 
-    loaded = load_files(source_directory, target_directory, include, exclude)
-    print(f"Loaded {len(loaded)} files:")
-    for file in loaded:
-        print(file)
+        shutil.copy2(src_path, new_path)
+    
+    print(f"Files collected from {source} to {out_dir}")
+
+def reconstruct_folder_structure(
+    source: str,
+    out_dir: str,
+    separator: str = '%',
+    path_editor: Optional[Callable[[str], str]] = None,
+    overwrite: bool = True
+):
+
+    out_dir_path = Path(out_dir)
+    
+    if overwrite and out_dir_path.exists():
+        shutil.rmtree(out_dir)
+    
+    out_dir_path.mkdir(parents=True, exist_ok=True)
+
+    for root, _, files in os.walk(source):
+        for file in files:
+
+            src_file_path = os.path.join(root, file)
+
+            if path_editor:
+                file = path_editor(file)
+
+            relative_path = file.replace(separator, os.path.sep)
+            new_file_path = os.path.join(out_dir, relative_path)
+            
+            os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
+            
+            shutil.copy2(src_file_path, new_file_path)
+    
+    print(f"Folder structure reconstructed from {source} to {out_dir}")
