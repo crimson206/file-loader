@@ -31,16 +31,6 @@ if [ $? -eq 0 ]; then
         
         # parent repository의 디렉토리로 이동 (상위 디렉토리로 이동)
         cd ..
-        
-        # 새로운 dev_repo를 submodule로 추가
-        git submodule add "https://github.com/crimson206/$dev_repo.git" "$dev_repo"
-        git submodule update --init --recursive
-
-        # 변경 사항 커밋
-        git add .gitmodules "$dev_repo"
-        git commit -m "Add submodule $dev_repo"
-        git push origin main
-        echo "Successfully added submodule to parent repository"
     else
         echo "Failed to clone repository: $dev_repo"
     fi

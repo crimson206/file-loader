@@ -64,7 +64,8 @@ def add_options(template: str, options: Options) -> str:
 # region Utils
 
 
-def create_skeleton(name_space, module_name):
+def create_skeleton(name_space:str, module_name:str):
+    module_name = module_name.replace('-', '_')
     os.makedirs(f"src/{name_space}/{module_name}", exist_ok=True)
     with open(f"src/{name_space}/{module_name}/__init__.py", "w") as f:
         f.write("# Init file for the module")
@@ -115,8 +116,8 @@ options = Options(
 # Define the general information of your package
 kwargs = Kwargs(
     name_space="crimson",
-    module_name="code-extractor",
-    description="From source code, extract useful information.",
+    module_name="file-loader",
+    description="Load files in one folder.",
 )
 
 # endregion
