@@ -18,14 +18,12 @@ def collect_files(
     path_editor: Optional[Callable[[str], str]] = None,
     overwrite: bool = True,
 ):
-    source_paths = filter_paths(source, includes, excludes)
-
     out_dir_path = Path(out_dir)
-
     if overwrite and out_dir_path.exists():
         shutil.rmtree(out_dir)
-
     out_dir_path.mkdir(parents=True, exist_ok=True)
+
+    source_paths = filter_paths(source, includes, excludes)
 
     for src_path in source_paths:
 
@@ -65,7 +63,7 @@ def reconstruct_folder_structure(
                 file = path_editor(file)
 
             relative_path = file.replace(separator, os.path.sep)
-            new_file_path = os.path.join(out_dir, relative_path)
+            new_file_path = (out_dir + '/' + relative_path).replace('//', '/')
 
             os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
 

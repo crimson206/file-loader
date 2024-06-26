@@ -1,6 +1,7 @@
 import pytest
 import re
 from pathlib import Path
+from typing import List
 from crimson.file_loader.utils import (
     search,
     filter,
@@ -19,7 +20,10 @@ def test_search():
 def test_filter():
     paths = ["file1.txt", "file2.py", "file3.jpg"]
     assert filter("\.txt$", paths) == ["file1.txt"]
+    assert filter("\.py$", paths, mode="include") == ["file2.py"]
     assert filter("\.py$", paths, mode="exclude") == ["file1.txt", "file3.jpg"]
+    paths_in_Path: List[Path] = [Path(path) for path in paths]
+    assert filter("\.txt$", paths_in_Path) == ["file1.txt"]
 
 
 def test_get_paths(tmp_path):

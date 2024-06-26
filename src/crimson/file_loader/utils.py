@@ -97,11 +97,12 @@ def filter_paths(
     excludes: List[str] = [],
 ):
     paths = get_paths(source)
-    included_paths = []
-
-    for pattern in includes:
-        included_paths += filter(pattern, paths, mode="include")
-    paths = included_paths
+    
+    if len(includes) != 0:
+        included_paths = []
+        for pattern in includes:
+            included_paths += filter(pattern, paths, mode="include")
+        paths = included_paths
 
     for pattern in excludes:
         if len(paths) != 0:
