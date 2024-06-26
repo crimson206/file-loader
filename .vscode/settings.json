@@ -1,0 +1,25 @@
+{
+    // Folderable .py
+
+    "editor.foldingStrategy": "indentation",
+    "editor.foldRegions": {
+        "start": "^\\s*#\\s*region\\b",
+        "end": "^\\s*#\\s*endregion\\b"
+    },
+    "editor.defaultFoldingImportLevel": 2
+
+    // Unittest Setup
+
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./test",
+        "-p",
+        "test_*.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true,
+
+    // Additional VS Code Settings
+    "workbench.settings.openDefaultSettings": true
+}
