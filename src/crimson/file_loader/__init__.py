@@ -1,54 +1,72 @@
 # src/crimson/file_loader/__init__.py
-
 import os
-import shutil
+from typing import List, Callable, Optional
 from pathlib import Path
-from typing import List, Optional
+import shutil
+from .utils import (
+    filter_paths,
+    transform_path,
+)
 
-def transform_path(path: str, separator: str = "%") -> str:
-    return path.replace(os.path.sep, separator)
 
-def restore_path(transformed: str, separator: str = "%") -> str:
-    return transformed.replace(separator, os.path.sep)
+def collect_files(
+    source: str,
+    out_dir: str,
+    separator: str = "%",
+    includes: List[str] = [],
+    excludes: List[str] = [],
+    path_editor: Optional[Callable[[str], str]] = None,
+    overwrite: bool = True,
+):
+    out_dir_path = Path(out_dir)
+    if overwrite and out_dir_path.exists():
+        shutil.rmtree(out_dir)
+    out_dir_path.mkdir(parents=True, exist_ok=True)
 
-def load_files(
-    source_dir: str,
-    target_dir: str,
-    include_patterns: Optional[List[str]] = None,
-    exclude_patterns: Optional[List[str]] = None,
-    separator: str = "%"
-) -> List[str]:
-    source_path = Path(source_dir)
-    target_path = Path(target_dir)
-    loaded_files = []
+    source_paths = filter_paths(source, includes, excludes)
 
-    for root, _, files in os.walk(source_dir):
+    for src_path in source_paths:
+
+        new_path = transform_path(src_path, separator)
+        if path_editor:
+            new_path = path_editor(new_path)
+        new_path = str(Path(out_dir) / new_path)
+
+        Path(new_path).parent.mkdir(parents=True, exist_ok=True)
+
+        shutil.copy2(src_path, new_path)
+
+    print(f"Files collected from {source} to {out_dir}")
+
+
+def reconstruct_folder_structure(
+    source: str,
+    out_dir: str,
+    separator: str = "%",
+    path_editor: Optional[Callable[[str], str]] = None,
+    overwrite: bool = True,
+):
+
+    out_dir_path = Path(out_dir)
+
+    if overwrite and out_dir_path.exists():
+        shutil.rmtree(out_dir)
+
+    out_dir_path.mkdir(parents=True, exist_ok=True)
+
+    for root, _, files in os.walk(source):
         for file in files:
-            file_path = Path(root) / file
-            relative_path = file_path.relative_to(source_path)
 
-            if include_patterns and not any(relative_path.match(pattern) for pattern in include_patterns):
-                continue
-            if exclude_patterns and any(relative_path.match(pattern) for pattern in exclude_patterns):
-                continue
+            src_file_path = os.path.join(root, file)
 
-            transformed_name = transform_path(str(relative_path), separator)
-            target_file = target_path / transformed_name
+            if path_editor:
+                file = path_editor(file)
 
-            target_file.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(file_path, target_file)
-            loaded_files.append(str(relative_path))
+            relative_path = file.replace(separator, os.path.sep)
+            new_file_path = (out_dir + '/' + relative_path).replace('//', '/')
 
-    return loaded_files
+            os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
 
-# Usage example
-if __name__ == "__main__":
-    source_directory = "path/to/source"
-    target_directory = "path/to/target"
-    include = ["*.py", "*.json"]
-    exclude = ["*test*", "*__pycache__*"]
+            shutil.copy2(src_file_path, new_file_path)
 
-    loaded = load_files(source_directory, target_directory, include, exclude)
-    print(f"Loaded {len(loaded)} files:")
-    for file in loaded:
-        print(file)
+    print(f"Folder structure reconstructed from {source} to {out_dir}")
