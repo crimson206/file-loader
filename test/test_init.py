@@ -1,5 +1,5 @@
 import pytest
-from crimson.file_loader import collect_files, reconstruct_folder_structure
+from crimson.file_loader import collect_files, reconstruct_folder_structure, generate_file_contents
 
 
 @pytest.fixture
@@ -109,3 +109,49 @@ def test_reconstruct_folder_structure_overwrite(sample_directory, tmp_path):
     reconstruct_folder_structure(str(intermediate_dir), str(out_dir), overwrite=True)
 
     assert not (out_dir / "existing_file.txt").exists()
+
+
+def test_generate_file_contents(sample_directory):
+    file_contents = generate_file_contents(
+        str(sample_directory),
+        includes=["\.txt$", "\.py$"],
+        excludes=["dir2"],
+    )
+
+    assert len(file_contents) == 1
+    assert file_contents[0][0].endswith("dir1%file1.txt")
+    assert file_contents[0][1] == b"content1"
+
+
+def test_generate_file_contents_with_path_editor(sample_directory):
+    def path_editor(path):
+        return path.replace("dir1", "new_dir1")
+
+    file_contents = generate_file_contents(
+        str(sample_directory),
+        post_path_editor=path_editor,
+    )
+
+    assert any(content[0].endswith("new_dir1%file1.txt") for content in file_contents)
+
+
+def test_generate_file_contents_all_files(sample_directory):
+    file_contents = generate_file_contents(str(sample_directory))
+
+    assert len(file_contents) == 3
+    file_names = [content[0] for content in file_contents]
+    assert any("dir1%file1.txt" in name for name in file_names)
+    assert any("dir2%file2.py" in name for name in file_names)
+    assert any("file3.jpg" in name for name in file_names)
+
+
+def test_generate_file_contents_binary_content(sample_directory):
+    # 바이너리 파일 생성
+    binary_file = sample_directory / "binary_file.bin"
+    binary_file.write_bytes(b'\x00\x01\x02\x03')
+
+    file_contents = generate_file_contents(str(sample_directory), includes=[r"\.bin$"])
+
+    assert len(file_contents) == 1
+    assert file_contents[0][0].endswith("binary_file.bin")
+    assert file_contents[0][1] == b'\x00\x01\x02\x03'
