@@ -3,7 +3,6 @@ import re
 from pathlib import Path
 from typing import List
 from crimson.file_loader.utils import (
-    search,
     filter,
     get_paths,
     filter_source,
@@ -11,11 +10,6 @@ from crimson.file_loader.utils import (
     filter_paths,
 )
 
-
-def test_search():
-    assert search("test", "This is a test string")
-    assert not search("python", "This is a test string")
-    assert search("TEST", "This is a test string", flags=[re.IGNORECASE])
 
 
 def test_filter():
