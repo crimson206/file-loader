@@ -6,8 +6,9 @@ from crimson.file_loader.utils import (
     search,
     filter,
     get_paths,
-    filter_paths,
+    filter_source,
     transform_path,
+    filter_paths,
 )
 
 
@@ -39,7 +40,7 @@ def test_get_paths(tmp_path):
     assert str(tmp_path / "file2.py") in paths
 
 
-def test_filter_paths(tmp_path):
+def test_filter_source(tmp_path):
     # 임시 디렉토리 구조 생성
     d = tmp_path / "sub"
     d.mkdir()
@@ -47,7 +48,7 @@ def test_filter_paths(tmp_path):
     (tmp_path / "file2.py").touch()
     (tmp_path / "file3.jpg").touch()
 
-    paths = filter_paths(tmp_path, includes=["\.txt$", "\.py$"], excludes=["sub"])
+    paths = filter_source(tmp_path, includes=["\.txt$", "\.py$"], excludes=["sub"])
     assert len(paths) == 1
     assert str(tmp_path / "file2.py") in paths
 
@@ -57,4 +58,55 @@ def test_transform_path():
     assert transform_path("/path/to/file.txt", separator="-") == "-path-to-file.txt"
 
 
-# 추가 테스트 케이스를 여기에 작성할 수 있습니다.
+def test_filter_paths():
+    paths = [
+        "/home/user/docs/file1.txt",
+        "/home/user/docs/file2.pdf",
+        "/home/user/images/pic1.jpg",
+        "/home/user/images/pic2.png",
+        "/home/user/code/script.py",
+    ]
+
+    # Test with only includes
+    result = filter_paths(paths, includes=[r"\.txt$", r"\.pdf$"])
+    assert result == ["/home/user/docs/file1.txt", "/home/user/docs/file2.pdf"]
+
+    # Test with only excludes
+    result = filter_paths(paths, excludes=[r"\.jpg$", r"\.png$"])
+    assert result == [
+        "/home/user/docs/file1.txt",
+        "/home/user/docs/file2.pdf",
+        "/home/user/code/script.py",
+    ]
+
+    # Test with both includes and excludes
+    result = filter_paths(
+        paths, includes=[r"/docs/", r"/images/"], excludes=[r"\.pdf$"]
+    )
+    assert result == [
+        "/home/user/docs/file1.txt",
+        "/home/user/images/pic1.jpg",
+        "/home/user/images/pic2.png",
+    ]
+
+    # Test with no matches in includes
+    result = filter_paths(paths, includes=[r"\.mp3$"])
+    assert result == []
+
+    # Test with excludes that match everything
+    result = filter_paths(paths, excludes=[r".*"])
+    assert result == []
+
+    # Test with empty includes and excludes
+    result = filter_paths(paths)
+    assert result == paths
+
+    # Test with multiple include patterns
+    result = filter_paths(paths, includes=[r"\.txt$", r"\.py$"])
+    assert result == ["/home/user/docs/file1.txt", "/home/user/code/script.py"]
+
+    # Test with overlapping includes and excludes
+    result = filter_paths(
+        paths, includes=[r"/docs/", r"/images/"], excludes=[r"\.jpg$", r"/docs/"]
+    )
+    assert result == ["/home/user/images/pic2.png"]

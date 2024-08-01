@@ -4,7 +4,7 @@ from typing import List, Callable, Optional
 from pathlib import Path
 import shutil
 from .utils import (
-    filter_paths,
+    filter_source,
     transform_path,
 )
 
@@ -23,7 +23,7 @@ def collect_files(
         shutil.rmtree(out_dir)
     out_dir_path.mkdir(parents=True, exist_ok=True)
 
-    source_paths = filter_paths(source, includes, excludes)
+    source_paths = filter_source(source, includes, excludes)
 
     for src_path in source_paths:
 
