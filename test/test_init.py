@@ -50,7 +50,7 @@ def test_collect_files_with_path_editor(sample_directory, tmp_path):
     collect_files(
         str(sample_directory),
         str(out_dir),
-        path_editor=path_editor,
+        post_path_editor=path_editor,
     )
 
     assert (out_dir / get_new_path(tmp_path, "new_dir1%file1.txt")).exists()
