@@ -92,12 +92,11 @@ def get_paths(
 
 
 def filter_paths(
-    source: str,
+    paths: List[str],
     includes: List[str] = [],
     excludes: List[str] = [],
 ):
-    paths = get_paths(source)
-    
+
     if len(includes) != 0:
         included_paths = []
         for pattern in includes:
@@ -108,6 +107,16 @@ def filter_paths(
         if len(paths) != 0:
             paths = filter(pattern, paths, mode="exclude")
 
+    return paths
+
+
+def filter_source(
+    source: str,
+    includes: List[str] = [],
+    excludes: List[str] = [],
+):
+    paths = get_paths(source)
+    paths = filter_paths(paths, includes, excludes)
     return paths
 
 
