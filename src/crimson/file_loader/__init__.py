@@ -1,6 +1,5 @@
-# src/crimson/file_loader/__init__.py
 import os
-from typing import Callable, Optional, Generic, TypeVar
+from typing import Callable, Optional, Generic, TypeVar, List, TypedDict
 from pathlib import Path
 from crimson.intelli_type import IntelliType
 import shutil
@@ -15,6 +14,11 @@ from .utils import (
 )
 
 T = TypeVar("T")
+
+
+class ByteSourceDict(TypedDict):
+    path: str
+    content: bytes
 
 
 class PostPathEditor_(IntelliType[Optional[Callable[[str], str]]], Generic[T]):
@@ -60,6 +64,36 @@ class OutDir_(IntelliType[str], Generic[T]):
     """
 
 
+def generate_file_contents(
+    source: Source_.annotation,
+    separator: Separator_.annotation = "%",
+    includes: Includes_.annotation = [],
+    excludes: Excludes_.annotation = [],
+    post_path_editor: PostPathEditor_.annotation = None,
+    search: Search_.annotation = Search_.default,
+) -> List[ByteSourceDict]:
+    """
+    Prepares file information (path and content) from a source directory,
+    applies filtering and structure-info-augmented filename.
+
+    Returns a list of SourceDict, each containing the new file path and its content.
+    """
+    source_paths = filter_source(source, includes, excludes, search=search)
+    file_contents = []
+
+    for src_path in source_paths:
+        new_path = transform_path(src_path, separator)
+        if post_path_editor:
+            new_path = post_path_editor(new_path)
+
+        with open(src_path, "rb") as f:
+            content = f.read()
+
+        file_contents.append({"path": new_path, "content": content})
+
+    return file_contents
+
+
 def collect_files(
     source: Source_.annotation,
     out_dir: OutDir_.annotation,
@@ -79,18 +113,16 @@ def collect_files(
         shutil.rmtree(out_dir)
     out_dir_path.mkdir(parents=True, exist_ok=True)
 
-    source_paths = filter_source(source, includes, excludes, search=search)
+    file_contents = generate_file_contents(
+        source, separator, includes, excludes, post_path_editor, search
+    )
 
-    for src_path in source_paths:
+    for item in file_contents:
+        full_path = out_dir_path / item["path"]
+        full_path.parent.mkdir(parents=True, exist_ok=True)
 
-        new_path = transform_path(src_path, separator)
-        if post_path_editor:
-            new_path = post_path_editor(new_path)
-        new_path = str(Path(out_dir) / new_path)
-
-        Path(new_path).parent.mkdir(parents=True, exist_ok=True)
-
-        shutil.copy2(src_path, new_path)
+        with open(full_path, "wb") as f:
+            f.write(item["content"])
 
     print(f"Files collected from {source} to {out_dir}")
 
