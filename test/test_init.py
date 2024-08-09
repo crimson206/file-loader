@@ -114,13 +114,13 @@ def test_reconstruct_folder_structure_overwrite(sample_directory, tmp_path):
 def test_generate_file_contents(sample_directory):
     file_contents = generate_file_contents(
         str(sample_directory),
-        includes=["\.txt$", "\.py$"],
+        includes=[r"\.txt$", r"\.py$"],
         excludes=["dir2"],
     )
 
     assert len(file_contents) == 1
-    assert file_contents[0][0].endswith("dir1%file1.txt")
-    assert file_contents[0][1] == b"content1"
+    assert file_contents[0]["path"].endswith("dir1%file1.txt")
+    assert file_contents[0]["content"] == b"content1"
 
 
 def test_generate_file_contents_with_path_editor(sample_directory):
@@ -132,26 +132,26 @@ def test_generate_file_contents_with_path_editor(sample_directory):
         post_path_editor=path_editor,
     )
 
-    assert any(content[0].endswith("new_dir1%file1.txt") for content in file_contents)
+    assert any(content["path"].endswith("new_dir1%file1.txt") for content in file_contents)
 
 
 def test_generate_file_contents_all_files(sample_directory):
     file_contents = generate_file_contents(str(sample_directory))
 
     assert len(file_contents) == 3
-    file_names = [content[0] for content in file_contents]
+    file_names = [content["path"] for content in file_contents]
     assert any("dir1%file1.txt" in name for name in file_names)
     assert any("dir2%file2.py" in name for name in file_names)
     assert any("file3.jpg" in name for name in file_names)
 
 
 def test_generate_file_contents_binary_content(sample_directory):
-    # 바이너리 파일 생성
+    # Create a binary file
     binary_file = sample_directory / "binary_file.bin"
     binary_file.write_bytes(b'\x00\x01\x02\x03')
 
     file_contents = generate_file_contents(str(sample_directory), includes=[r"\.bin$"])
 
     assert len(file_contents) == 1
-    assert file_contents[0][0].endswith("binary_file.bin")
-    assert file_contents[0][1] == b'\x00\x01\x02\x03'
+    assert file_contents[0]["path"].endswith("binary_file.bin")
+    assert file_contents[0]["content"] == b'\x00\x01\x02\x03'

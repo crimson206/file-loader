@@ -1,5 +1,5 @@
 import os
-from typing import Callable, Optional, Generic, TypeVar, List, Tuple
+from typing import Callable, Optional, Generic, TypeVar, List, TypedDict
 from pathlib import Path
 from crimson.intelli_type import IntelliType
 import shutil
@@ -14,6 +14,11 @@ from .utils import (
 )
 
 T = TypeVar("T")
+
+
+class ByteSourceDict(TypedDict):
+    path: str
+    content: bytes
 
 
 class PostPathEditor_(IntelliType[Optional[Callable[[str], str]]], Generic[T]):
@@ -66,12 +71,12 @@ def generate_file_contents(
     excludes: Excludes_.annotation = [],
     post_path_editor: PostPathEditor_.annotation = None,
     search: Search_.annotation = Search_.default,
-) -> List[Tuple[str, bytes]]:
+) -> List[ByteSourceDict]:
     """
     Prepares file information (path and content) from a source directory,
     applies filtering and structure-info-augmented filename.
 
-    Returns a list of tuples, each containing the new file path and its content.
+    Returns a list of SourceDict, each containing the new file path and its content.
     """
     source_paths = filter_source(source, includes, excludes, search=search)
     file_contents = []
@@ -84,7 +89,7 @@ def generate_file_contents(
         with open(src_path, "rb") as f:
             content = f.read()
 
-        file_contents.append((new_path, content))
+        file_contents.append({"path": new_path, "content": content})
 
     return file_contents
 
@@ -112,12 +117,12 @@ def collect_files(
         source, separator, includes, excludes, post_path_editor, search
     )
 
-    for new_path, content in file_contents:
-        full_path = out_dir_path / new_path
+    for item in file_contents:
+        full_path = out_dir_path / item["path"]
         full_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(full_path, "wb") as f:
-            f.write(content)
+            f.write(item["content"])
 
     print(f"Files collected from {source} to {out_dir}")
 
