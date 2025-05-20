@@ -1,31 +1,20 @@
-[build-system]
-requires = ["setuptools>=61.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "crimson-file-loader"
-version = "0.1.5"
-description = "Load files in one folder."
-readme = "README.md"
+name = "ignorely"
+version = "1.0.0"
+description = ""
 authors = [
-  { name="Sisung Kim", email="sisung.kim1@gmail.com" },
+    {name = "Sisung Kim",email = "sisung.kim1@gmail.com"}
 ]
-
-classifiers = [
-    "Programming Language :: Python :: 3",
-
-    "Intended Audience :: Developers",
-    "Topic :: Software Development :: Build Tools",
-
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
 dependencies = [
-    "pydantic",
-    "crimson-intelli-type==0.4.0"
+    "cleo (>=2.1.0,<3.0.0)",
+    "pathspec (>=0.12.1,<0.13.0)"
 ]
-requires-python = ">=3.9"
 
-[project.urls]
-"Homepage" = "https://github.com/crimson206/file-loader"
-"Bug Tracker" = "https://github.com/crimson206/file-loader/issues"
+[project.scripts]
+ignorely = "ignorely.main:main"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+
