@@ -1,18 +1,30 @@
 import os
-import sys
 from cleo.commands.command import Command
 from cleo.helpers import argument, option
-from ..utils import copy_files
+from ..utils import export_files
 
 
-class CopyFilesCommand(Command):
-    name = "copy-files"
-    description = "Copy files to output directory based on provided file list"
+class ExportFilesCommand(Command):
+    name = "export-files"
+    description = "Filter and copy files in one step (combines ls-files + copy-files)"
 
     arguments = [argument("output_dir", description="Directory to copy files to")]
 
     options = [
-        option("list-file", "l", description="Read file list from file", flag=False),
+        option(
+            "exclude-tot",
+            "e",
+            description="File containing list of exclude pattern files (default: .ignorely/exclude_tot)",
+            flag=False,
+            default=".ignorely/exclude_tot",
+        ),
+        option(
+            "include-tot",
+            "i",
+            description="File containing list of include pattern files (default: .ignorely/include_tot)",
+            flag=False,
+            default=".ignorely/include_tot",
+        ),
         option(
             "dry-run",
             "d",
@@ -42,70 +54,55 @@ class CopyFilesCommand(Command):
 
     def handle(self):
         output_dir = self.argument("output_dir")
-        list_file = self.option("list-file")
+        exclude_tot_file = self.option("exclude-tot")
+        include_tot_file = self.option("include-tot")
         dry_run = self.option("dry-run")
         flatten = self.option("flatten")
         divider = self.option("divider")
         clean = self.option("clean")
 
-        # 파일 목록 가져오기
-        files = []
-
-        # 파일에서 목록 읽기
-        if list_file:
-            if os.path.exists(list_file):
-                with open(list_file, "r") as f:
-                    files = [line.strip() for line in f if line.strip()]
-            else:
-                self.error(f"File not found: {list_file}")
-                return 1
-        # 표준 입력에서 목록 읽기
-        else:
-            # 표준 입력이 파이프에서 오는지 확인
-            if not os.isatty(sys.stdin.fileno()):
-                files = [line.strip() for line in sys.stdin if line.strip()]
-            else:
-                self.error(
-                    "No file list provided. Use --list-file or pipe from another command."
-                )
-                return 1
-
-        if not files:
-            self.line("<comment>No files to copy.</comment>")
-            return 0
-
-        # 복사 수행 (utils 함수 사용)
         try:
-            copied_files = copy_files(
-                files=files,
+            # export_files 함수 호출 (필터링 + 복사 통합)
+            filtered_files, copied_files = export_files(
                 output_dir=output_dir,
+                exclude_tot_file=exclude_tot_file,
+                include_tot_file=include_tot_file,
                 dry_run=dry_run,
                 flatten=flatten,
                 divider=divider,
                 clean=clean
             )
-            
+
             # 결과 출력
+            if not filtered_files:
+                self.line("<comment>No files to export.</comment>")
+                return 0
+
+            # Clean 메시지
             if clean and os.path.exists(output_dir):
                 if dry_run:
                     self.line(f"Would remove existing directory: {output_dir}")
                 else:
                     self.info(f"Cleaned directory: {output_dir}")
-            
+
+            # 복사 결과 출력
             for file_path, dest_path in copied_files:
                 if dry_run:
                     self.line(f"Would copy {file_path} to {dest_path}")
                 else:
                     self.info(f"Copied {file_path} to {dest_path}")
-            
+
+            # 요약
+            file_count = len(filtered_files)
             copied_count = len(copied_files)
+            
             if dry_run:
-                self.line(f"<comment>Would copy {copied_count} files to {output_dir}</comment>")
+                self.line(f"<comment>Found {file_count} files, would export {copied_count} to {output_dir}</comment>")
             else:
-                self.line(f"<info>Copied {copied_count} files to {output_dir}</info>")
-                
+                self.line(f"<info>Found {file_count} files, exported {copied_count} to {output_dir}</info>")
+
         except Exception as e:
-            self.error(f"Failed to copy files: {str(e)}")
+            self.error(f"Failed to export files: {str(e)}")
             return 1
 
         return 0

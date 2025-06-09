@@ -1,7 +1,7 @@
 [project]
 name = "ignorely"
-version = "1.0.0"
-description = ""
+version = "1.2.1"
+description = "CLI tool for Git-style file filtering and copying with include/exclude pattern management"
 authors = [
     {name = "Sisung Kim",email = "sisung.kim1@gmail.com"}
 ]
