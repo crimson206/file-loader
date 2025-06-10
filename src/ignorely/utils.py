@@ -34,7 +34,7 @@ def collect_patterns_from_file_list(pattern_file):
 
 
 def get_all_files(root_dir="."):
-    """현재 디렉터리의 모든 파일 목록 가져오기"""
+    """지정된 디렉터리의 모든 파일 목록 가져오기"""
     files = []
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
@@ -62,22 +62,22 @@ def filter_files(files, exclude_patterns=None, include_patterns=None):
     return result
 
 
-def list_files(exclude_tot_file=None, include_tot_file=None):
-    """include/exclude 방식으로 파일 필터링"""
+def list_files(ignorely_dir=".", target_dir="."):
+    """새로운 방식: ignorely_dir에서 설정을 읽고 target_dir에서 파일 필터링"""
     exclude_patterns = []
     include_patterns = []
     
-    # 기본값 설정
-    if exclude_tot_file is None:
-        exclude_tot_file = ".ignorely/exclude_tot"
-    if include_tot_file is None:
-        include_tot_file = ".ignorely/include_tot"
+    # .ignorely 폴더 경로 구성
+    ignorely_path = os.path.join(ignorely_dir, ".ignorely")
+    exclude_tot_file = os.path.join(ignorely_path, "exclude_tot")
+    include_tot_file = os.path.join(ignorely_path, "include_tot")
     
     # exclude_tot, include_tot 파일에서 패턴 수집
     exclude_patterns.extend(collect_patterns_from_file_list(exclude_tot_file))
     include_patterns.extend(collect_patterns_from_file_list(include_tot_file))
     
-    all_files = get_all_files()
+    # target_dir에서 파일 목록 수집
+    all_files = get_all_files(target_dir)
     return filter_files(all_files, exclude_patterns, include_patterns)
 
 
@@ -120,15 +120,25 @@ def copy_files(files, output_dir, dry_run=False, flatten=False, divider="%", cle
     return copied_files
 
 
-def export_files(output_dir, exclude_tot_file=None, include_tot_file=None, 
+def export_files(output_dir, ignorely_dir=".", target_dir=".", 
                  dry_run=False, flatten=False, divider="%", clean=False):
-    """파일 필터링 후 복사하는 통합 함수"""
+    """파일 필터링 후 복사하는 통합 함수 - 새로운 방식"""
     # 1. 파일 필터링
-    filtered_files = list_files(exclude_tot_file, include_tot_file)
+    filtered_files = list_files(ignorely_dir=ignorely_dir, target_dir=target_dir)
     
-    # 2. 파일 복사
+    # 2. target_dir 기준으로 파일 경로 조정
+    adjusted_files = []
+    for file in filtered_files:
+        if target_dir != ".":
+            # target_dir가 현재 디렉토리가 아닌 경우 전체 경로로 조정
+            adjusted_file = os.path.join(target_dir, file)
+        else:
+            adjusted_file = file
+        adjusted_files.append(adjusted_file)
+    
+    # 3. 파일 복사
     copied_files = copy_files(
-        files=filtered_files,
+        files=adjusted_files,
         output_dir=output_dir,
         dry_run=dry_run,
         flatten=flatten,

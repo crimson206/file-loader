@@ -57,7 +57,7 @@ class CopyFilesCommand(Command):
                 with open(list_file, "r") as f:
                     files = [line.strip() for line in f if line.strip()]
             else:
-                self.error(f"File not found: {list_file}")
+                self.line_error(f"File not found: {list_file}")
                 return 1
         # 표준 입력에서 목록 읽기
         else:
@@ -65,7 +65,7 @@ class CopyFilesCommand(Command):
             if not os.isatty(sys.stdin.fileno()):
                 files = [line.strip() for line in sys.stdin if line.strip()]
             else:
-                self.error(
+                self.line_error(
                     "No file list provided. Use --list-file or pipe from another command."
                 )
                 return 1
@@ -105,7 +105,7 @@ class CopyFilesCommand(Command):
                 self.line(f"<info>Copied {copied_count} files to {output_dir}</info>")
                 
         except Exception as e:
-            self.error(f"Failed to copy files: {str(e)}")
+            self.line_error(f"Failed to copy files: {str(e)}")
             return 1
 
         return 0

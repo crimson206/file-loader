@@ -6,24 +6,24 @@ from ..utils import export_files
 
 class ExportFilesCommand(Command):
     name = "export-files"
-    description = "Filter and copy files in one step (combines ls-files + copy-files)"
+    description = "Filter and copy files in one step using .ignorely directory structure"
 
-    arguments = [argument("output_dir", description="Directory to copy files to")]
+    arguments = [argument("output_dir", description="Directory to copy files to", optional=True, default="output_dir")]
 
     options = [
         option(
-            "exclude-tot",
-            "e",
-            description="File containing list of exclude pattern files (default: .ignorely/exclude_tot)",
+            "ignorely-dir",
+            'i',
+            description="Directory containing .ignorely folder (default: current directory)",
             flag=False,
-            default=".ignorely/exclude_tot",
+            default=".",
         ),
         option(
-            "include-tot",
-            "i",
-            description="File containing list of include pattern files (default: .ignorely/include_tot)",
+            "target-dir",
+            'None',
+            description="Directory to scan for files (default: current directory)",
             flag=False,
-            default=".ignorely/include_tot",
+            default=".",
         ),
         option(
             "dry-run",
@@ -33,13 +33,13 @@ class ExportFilesCommand(Command):
         ),
         option(
             "flatten",
-            None,
+            'f',
             description="Flatten directory structure using divider in filenames",
             flag=True,
         ),
         option(
             "divider",
-            None,
+            'D',
             description="Character to use as path divider when flattening (default: %)",
             flag=False,
             default="%",
@@ -54,19 +54,31 @@ class ExportFilesCommand(Command):
 
     def handle(self):
         output_dir = self.argument("output_dir")
-        exclude_tot_file = self.option("exclude-tot")
-        include_tot_file = self.option("include-tot")
+        ignorely_dir = self.option("ignorely-dir")
+        target_dir = self.option("target-dir")
         dry_run = self.option("dry-run")
         flatten = self.option("flatten")
         divider = self.option("divider")
         clean = self.option("clean")
 
+        # .ignorely 폴더 존재 확인
+        ignorely_path = os.path.join(ignorely_dir, ".ignorely")
+        if not os.path.exists(ignorely_path):
+            self.error(f"No .ignorely directory found in {ignorely_dir}")
+            self.line("Run 'ignorely init' to create the required directory structure.")
+            return 1
+
+        # target_dir 존재 확인
+        if not os.path.exists(target_dir):
+            self.error(f"Target directory does not exist: {target_dir}")
+            return 1
+
         try:
             # export_files 함수 호출 (필터링 + 복사 통합)
             filtered_files, copied_files = export_files(
                 output_dir=output_dir,
-                exclude_tot_file=exclude_tot_file,
-                include_tot_file=include_tot_file,
+                ignorely_dir=ignorely_dir,
+                target_dir=target_dir,
                 dry_run=dry_run,
                 flatten=flatten,
                 divider=divider,
