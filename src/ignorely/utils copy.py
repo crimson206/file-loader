@@ -157,43 +157,28 @@ def initialize_ignorely_directory(directory="."):
     # Create .ignorely directory
     os.makedirs(ignorely_dir)
     
-    # Create exclude_tot with actual file path
+    dot_exclude_content = """# Exclude patterns file list
+
+    # Create exclude_tot with example
     exclude_tot_content = """# Exclude patterns file list
 # Add paths to your exclude pattern files (e.g. .gitignore)
-.gitignore
-.ignorely/.excludes
+# Example:
+#.gitignore
+#.dockerignore
 """
     
-    # Create include_tot with actual file path
+    # Create include_tot with example
     include_tot_content = """# Include patterns file list
 # Add paths to your include pattern files
-.ignorely/.includes
+# Example:
+#.includefile
 """
     
-    # Create .excludes with common ignore patterns
-    excludes_content = """# Common ignore patterns
-.git/
-output_dir/
-"""
-    
-    # Create .includes with example patterns
-    includes_content = """# Example include patterns
-.ignorely/
-src/
-tests/
-"""
-    
-    # Write all the files
+    # Write the files
     with open(os.path.join(ignorely_dir, "exclude_tot"), "w") as f:
         f.write(exclude_tot_content)
         
     with open(os.path.join(ignorely_dir, "include_tot"), "w") as f:
         f.write(include_tot_content)
-        
-    with open(os.path.join(ignorely_dir, ".excludes"), "w") as f:
-        f.write(excludes_content)
-        
-    with open(os.path.join(ignorely_dir, ".includes"), "w") as f:
-        f.write(includes_content)
         
     return True

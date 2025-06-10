@@ -1,2 +1,4 @@
-.ignorely/.excludes
+# Exclude patterns file list
+# Add paths to your exclude pattern files (e.g. .gitignore)
 .gitignore
+.ignorely/.excludes
