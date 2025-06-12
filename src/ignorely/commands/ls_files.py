@@ -6,7 +6,7 @@ from ..utils import list_files
 
 class LsFilesCommand(Command):
     name = "ls-files"
-    description = "List files with include/exclude filtering using .ignorely directory structure"
+    description = "List files with include/exclude filtering using ignorely directory structure"
 
     options = [
         option(
@@ -18,9 +18,9 @@ class LsFilesCommand(Command):
         option(
             "ignorely-dir",
             None,
-            description="Directory containing .ignorely folder (default: current directory)",
+            description="Directory containing ignorely configuration (default: .ignorely)",
             flag=False,
-            default=".",
+            default=".ignorely",
         ),
         option(
             "target-dir",
@@ -36,20 +36,13 @@ class LsFilesCommand(Command):
         ignorely_dir = self.option("ignorely-dir")
         target_dir = self.option("target-dir")
 
-        # .ignorely 폴더 존재 확인
-        ignorely_path = os.path.join(ignorely_dir, ".ignorely")
-        if not os.path.exists(ignorely_path):
-            self.error(f"No .ignorely directory found in {ignorely_dir}")
-            self.line("Run 'ignorely init' to create the required directory structure.")
-            return 1
-
         # target_dir 존재 확인
         if not os.path.exists(target_dir):
-            self.error(f"Target directory does not exist: {target_dir}")
+            self.line_error(f"Target directory does not exist: {target_dir}")
             return 1
 
         try:
-            # 새로운 방식으로 파일 필터링
+            # 파일 필터링
             filtered_files = list_files(
                 ignorely_dir=ignorely_dir,
                 target_dir=target_dir
@@ -64,20 +57,19 @@ class LsFilesCommand(Command):
                             f.write(f"{file}\n")
                     self.info(f"Results saved to {output_file}")
                 except Exception as e:
-                    self.error(f"Failed to write to file {output_file}: {str(e)}")
+                    self.line_error(f"Failed to write to file {output_file}: {str(e)}")
                     return 1
             else:
                 # 콘솔에 결과 출력
                 for file in filtered_files:
                     self.line(file)
 
-            # 요약 정보 (output 파일이 아닐 때만)
-            if output_file:
-                file_count = len(filtered_files)
-                self.line(f"<comment>Found {file_count} files matching filters</comment>")
+            # 요약 정보
+            file_count = len(filtered_files)
+            self.line(f"<comment>Found {file_count} files matching filters</comment>")
 
         except Exception as e:
-            self.error(f"Failed to list files: {str(e)}")
+            self.line_error(f"Failed to list files: {str(e)}")
             return 1
 
         return 0

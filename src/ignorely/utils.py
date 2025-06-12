@@ -62,19 +62,26 @@ def filter_files(files, exclude_patterns=None, include_patterns=None):
     return result
 
 
-def list_files(ignorely_dir=".", target_dir="."):
-    """새로운 방식: ignorely_dir에서 설정을 읽고 target_dir에서 파일 필터링"""
+def list_files(ignorely_dir=".ignorely", target_dir="."):
+    """새로운 방식: ignorely_dir에서 설정을 읽고 target_dir에서 파일 필터링
+    
+    Args:
+        ignorely_dir (str): ignorely 설정 디렉토리 경로 (기본값: .ignorely)
+        target_dir (str): 파일을 찾을 대상 디렉토리 (기본값: .)
+    """
     exclude_patterns = []
     include_patterns = []
     
-    # .ignorely 폴더 경로 구성
-    ignorely_path = os.path.join(ignorely_dir, ".ignorely")
-    exclude_tot_file = os.path.join(ignorely_path, "exclude_tot")
-    include_tot_file = os.path.join(ignorely_path, "include_tot")
+    # 설정 파일 경로
+    exclude_tot_file = os.path.join(ignorely_dir, "exclude_tot")
+    include_tot_file = os.path.join(ignorely_dir, "include_tot")
     
-    # exclude_tot, include_tot 파일에서 패턴 수집
-    exclude_patterns.extend(collect_patterns_from_file_list(exclude_tot_file))
-    include_patterns.extend(collect_patterns_from_file_list(include_tot_file))
+    # exclude_tot, include_tot 파일이 있으면 패턴 수집
+    if os.path.exists(exclude_tot_file):
+        exclude_patterns.extend(collect_patterns_from_file_list(exclude_tot_file))
+    
+    if os.path.exists(include_tot_file):
+        include_patterns.extend(collect_patterns_from_file_list(include_tot_file))
     
     # target_dir에서 파일 목록 수집
     all_files = get_all_files(target_dir)
@@ -120,9 +127,19 @@ def copy_files(files, output_dir, dry_run=False, flatten=False, divider="%", cle
     return copied_files
 
 
-def export_files(output_dir, ignorely_dir=".", target_dir=".", 
-                 dry_run=False, flatten=False, divider="%", clean=False):
-    """파일 필터링 후 복사하는 통합 함수 - 새로운 방식"""
+def export_files(output_dir, ignorely_dir=".ignorely", target_dir=".", 
+                dry_run=False, flatten=False, divider="%", clean=False):
+    """파일 필터링 후 복사하는 통합 함수 - 새로운 방식
+    
+    Args:
+        output_dir (str): 복사할 대상 디렉토리
+        ignorely_dir (str): ignorely 설정 디렉토리 경로 (기본값: .ignorely)
+        target_dir (str): 파일을 찾을 대상 디렉토리 (기본값: .)
+        dry_run (bool): 실제로 복사하지 않고 시뮬레이션만 수행
+        flatten (bool): 디렉토리 구조를 평탄화할지 여부
+        divider (str): flatten 모드에서 사용할 경로 구분자
+        clean (bool): 복사 전에 output_dir을 정리할지 여부
+    """
     # 1. 파일 필터링
     filtered_files = list_files(ignorely_dir=ignorely_dir, target_dir=target_dir)
     
@@ -149,23 +166,21 @@ def export_files(output_dir, ignorely_dir=".", target_dir=".",
     return filtered_files, copied_files
 
 
-def initialize_ignorely_directory(directory="."):
+def initialize_ignorely_directory(directory=".ignorely"):
     """Initialize .ignorely directory with required files.
     
     Args:
-        directory (str): Target directory to create .ignorely folder. Defaults to current directory.
+        directory (str): Target directory to create ignorely folder. Defaults to .ignorely
     
     Returns:
         bool: True if initialization was successful, False if directory already exists
     """
-    ignorely_dir = os.path.join(directory, ".ignorely")
-    
-    # Check if .ignorely already exists
-    if os.path.exists(ignorely_dir):
+    # Check if directory already exists
+    if os.path.exists(directory):
         return False
         
-    # Create .ignorely directory
-    os.makedirs(ignorely_dir)
+    # Create directory
+    os.makedirs(directory)
     
     # Create exclude_tot with actual file path
     exclude_tot_content = """# Exclude patterns file list
@@ -194,16 +209,16 @@ tests/
 """
     
     # Write all the files
-    with open(os.path.join(ignorely_dir, "exclude_tot"), "w") as f:
+    with open(os.path.join(directory, "exclude_tot"), "w") as f:
         f.write(exclude_tot_content)
         
-    with open(os.path.join(ignorely_dir, "include_tot"), "w") as f:
+    with open(os.path.join(directory, "include_tot"), "w") as f:
         f.write(include_tot_content)
         
-    with open(os.path.join(ignorely_dir, ".excludes"), "w") as f:
+    with open(os.path.join(directory, ".excludes"), "w") as f:
         f.write(excludes_content)
         
-    with open(os.path.join(ignorely_dir, ".includes"), "w") as f:
+    with open(os.path.join(directory, ".includes"), "w") as f:
         f.write(includes_content)
         
     return True

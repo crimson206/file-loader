@@ -10,7 +10,7 @@ try:
 except Exception:
     app_version = "unknown"
 
-application = Application("ignorely", app_version)
+application = Application("ignorely", "3.0.0")
 application.add(InitCommand())
 application.add(LsFilesCommand())
 application.add(CopyFilesCommand())

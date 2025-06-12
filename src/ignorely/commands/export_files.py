@@ -6,7 +6,7 @@ from ..utils import export_files
 
 class ExportFilesCommand(Command):
     name = "export-files"
-    description = "Filter and copy files in one step using .ignorely directory structure"
+    description = "Filter and copy files in one step using ignorely directory structure"
 
     arguments = [argument("output_dir", description="Directory to copy files to", optional=True, default="output_dir")]
 
@@ -14,13 +14,13 @@ class ExportFilesCommand(Command):
         option(
             "ignorely-dir",
             'i',
-            description="Directory containing .ignorely folder (default: current directory)",
+            description="Directory containing ignorely configuration (default: .ignorely)",
             flag=False,
-            default=".",
+            default=".ignorely",
         ),
         option(
             "target-dir",
-            'None',
+            't',
             description="Directory to scan for files (default: current directory)",
             flag=False,
             default=".",
@@ -61,16 +61,9 @@ class ExportFilesCommand(Command):
         divider = self.option("divider")
         clean = self.option("clean")
 
-        # .ignorely 폴더 존재 확인
-        ignorely_path = os.path.join(ignorely_dir, ".ignorely")
-        if not os.path.exists(ignorely_path):
-            self.error(f"No .ignorely directory found in {ignorely_dir}")
-            self.line("Run 'ignorely init' to create the required directory structure.")
-            return 1
-
         # target_dir 존재 확인
         if not os.path.exists(target_dir):
-            self.error(f"Target directory does not exist: {target_dir}")
+            self.line_error(f"Target directory does not exist: {target_dir}")
             return 1
 
         try:
@@ -114,7 +107,7 @@ class ExportFilesCommand(Command):
                 self.line(f"<info>Found {file_count} files, exported {copied_count} to {output_dir}</info>")
 
         except Exception as e:
-            self.error(f"Failed to export files: {str(e)}")
+            self.line_error(f"Failed to export files: {str(e)}")
             return 1
 
         return 0
