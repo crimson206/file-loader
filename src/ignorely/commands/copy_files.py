@@ -48,10 +48,8 @@ class CopyFilesCommand(Command):
         divider = self.option("divider")
         clean = self.option("clean")
 
-        # 파일 목록 가져오기
         files = []
 
-        # 파일에서 목록 읽기
         if list_file:
             if os.path.exists(list_file):
                 with open(list_file, "r") as f:
@@ -74,7 +72,6 @@ class CopyFilesCommand(Command):
             self.line("<comment>No files to copy.</comment>")
             return 0
 
-        # 복사 수행 (utils 함수 사용)
         try:
             copied_files = copy_files(
                 files=files,
@@ -84,26 +81,25 @@ class CopyFilesCommand(Command):
                 divider=divider,
                 clean=clean
             )
-            
-            # 결과 출력
+
             if clean and os.path.exists(output_dir):
                 if dry_run:
                     self.line(f"Would remove existing directory: {output_dir}")
                 else:
                     self.info(f"Cleaned directory: {output_dir}")
-            
+
             for file_path, dest_path in copied_files:
                 if dry_run:
                     self.line(f"Would copy {file_path} to {dest_path}")
                 else:
                     self.info(f"Copied {file_path} to {dest_path}")
-            
+
             copied_count = len(copied_files)
             if dry_run:
                 self.line(f"<comment>Would copy {copied_count} files to {output_dir}</comment>")
             else:
                 self.line(f"<info>Copied {copied_count} files to {output_dir}</info>")
-                
+
         except Exception as e:
             self.line_error(f"Failed to copy files: {str(e)}")
             return 1
